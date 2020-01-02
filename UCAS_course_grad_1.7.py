@@ -148,7 +148,7 @@ def login(event):
         login_info['text'] = '网页超时 请重新登录'
         return
 
-    pattern = re.compile('Identity=(.*?)&')
+    pattern = re.compile('Identity=([\w-]*)')
     try:
         iden = re.search(pattern, page.text).group(1)
     except:
@@ -167,7 +167,7 @@ def login(event):
     pattern = re.compile('"_id_1">&nbsp;&nbsp;(.+?)</label>')
     try:
         student_number = re.search(pattern, page.text).group(1)
-        student_number_payload = val={'num': student_number, 'sb': 'y'}
+        student_number_payload = {'num': student_number, 'sb': 'y'}
         page = post_data('http://jwxk.ucas.ac.cn/doSelectNo', data=student_number_payload)
         if page is None:
             login_info['text'] = '网页超时 请重新登录'
