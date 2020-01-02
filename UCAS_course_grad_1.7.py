@@ -49,12 +49,14 @@ def generate_log(select_result_page):
     success_message = re.search(pattern, select_result_page.text)
     pattern = re.compile('class="error">(.+?)</label>')
     error_message = re.search(pattern, select_result_page.text)
+    success = 0
     if success_message is not None:
         messages = success_message.group(1).split('<br/>')
         success = 1
-    else:
+    elif error_message is not None:
         messages = error_message.group(1).split('<br/>')
-        success = 0
+    else:
+        messages = ['403 Forbidden']
 
     for single_message in messages:
         message_str = single_message
