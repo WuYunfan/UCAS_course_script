@@ -24,7 +24,7 @@ def check_online():
         tkinter.messagebox.showerror(title='错误', message='您还未登录')
         return None
 
-    page = post_data('http://jwxk.ucas.ac.cn/courseManage/selectCourse', select_course_payload)
+    page = post_data('http://jwxk.ucas.ac.cn/courseManageBachelor/selectCourse', select_course_payload)
     if page is None:
         select_result['text'] = '网页超时 没有进行选课'
         return None
@@ -92,7 +92,7 @@ def select_separately(event):
         if add_course_code_to_payload(course, select_course_page):
             continue
 
-        select_result_page = post_data('http://jwxk.ucas.ac.cn/courseManage/saveCourse', select_course_payload)
+        select_result_page = post_data('http://jwxk.ucas.ac.cn/courseManageBachelor/saveCourse', select_course_payload)
         if select_result_page is None:
             log['text'] += course + ': 网页超时'+' \n ' + sep_time['text'] + '\n'
         else:
@@ -116,7 +116,7 @@ def select_together(event):
         select_result['text'] = '课程代码均不可用'
         return
 
-    select_result_page = post_data('http://jwxk.ucas.ac.cn/courseManage/saveCourse', select_course_payload)
+    select_result_page = post_data('http://jwxk.ucas.ac.cn/courseManageBachelor/saveCourse', select_course_payload)
     if select_result_page is None:
         select_result['text'] = '网页超时 没有进行选课'
     else:
@@ -138,7 +138,7 @@ def login(event):
         login_info['text'] = '网页超时 请重新登录'
         return
 
-    pattern = re.compile('&nbsp;(.+?)\s</li>', re.S)
+    pattern = re.compile('&nbsp;(.+?)</li>', re.S)
     try:
         name = re.search(pattern, page.text).group(1)
     except:
@@ -177,7 +177,7 @@ def login(event):
     except:
         pass
 
-    page = post_data('http://jwxk.ucas.ac.cn/courseManage/main')
+    page = post_data('http://jwxk.ucas.ac.cn/courseManageBachelor/main')
     if page is None:
         login_info['text'] = '网页超时 请重新登录'
         return
@@ -193,7 +193,7 @@ def login(event):
 def get_time():
     while True:
         try:
-            current_time = requests.get('http://jwxk.ucas.ac.cn/courseManage/main', timeout=3)
+            current_time = requests.get('http://jwxk.ucas.ac.cn/courseManageBachelor/main', timeout=3)
             current_time = current_time.headers
             current_time = current_time['Date']
             hour = current_time[17:19]
