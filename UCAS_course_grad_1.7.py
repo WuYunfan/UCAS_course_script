@@ -138,7 +138,7 @@ def login(event):
         login_info['text'] = '网页超时 请重新登录'
         return
 
-    pattern = re.compile('&nbsp;(.+?)\s</li>', re.S)
+    pattern = re.compile('&nbsp;(.+?)</li>', re.S)
     try:
         name = re.search(pattern, page.text).group(1)
     except:
