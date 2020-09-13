@@ -86,7 +86,7 @@ def select_separately(event):
         return
 
     course_list = course_input_separate.get()
-    course_list = course_list.split()
+    course_list = course_list.split(',')
     for course in course_list:
         select_course_payload['sids'] = []
         if add_course_code_to_payload(course, select_course_page):
@@ -107,7 +107,7 @@ def select_together(event):
         return
 
     course_list = course_input.get()
-    course_list = course_list.split()
+    course_list = course_list.split(',')
     select_course_payload['sids'] = []
     for course in course_list:
         add_course_code_to_payload(course, select_course_page)
@@ -138,7 +138,7 @@ def login(event):
         login_info['text'] = '网页超时 请重新登录'
         return
 
-    pattern = re.compile('&nbsp;(.+?)\s</li>', re.S)
+    pattern = re.compile('&nbsp;(.+?)</li>', re.S)
     try:
         name = re.search(pattern, page.text).group(1)
     except:
@@ -166,10 +166,10 @@ def login(event):
         login_info['text'] = '网页超时 请重新登录'
         return
 
-    pattern = re.compile('"_id_1">&nbsp;&nbsp;(.+?)</label>')
+    pattern = re.compile('</i> (.+?)&nbsp;\s*\(当前\)')
     try:
         student_number = re.search(pattern, page.text).group(1)
-        student_number_payload = {'num': student_number, 'sb': 'y'}
+        student_number_payload = {'num': student_number}
         page = post_data('http://jwxk.ucas.ac.cn/doSelectNo', data=student_number_payload)
         if page is None:
             login_info['text'] = '网页超时 请重新登录'
@@ -186,7 +186,7 @@ def login(event):
     pattern = re.compile('label for="id_(\d+)"')
     deptIds = re.findall(pattern, page.text)
     global select_course_payload
-    select_course_payload = {'s': select_course_s, 'deptIds': deptIds, 'sb': 'y'}
+    select_course_payload = {'s': select_course_s, 'deptIds': deptIds}
     login_info['text'] = '登陆成功 ' + name
 
 
@@ -221,7 +221,7 @@ def auto_switch(event):
     if auto_working == 0:
         tkinter.messagebox.showinfo(title='提示',
                  message='1.请先使用“分开选”功能，确认提示信息为“超过限选人数”(而无其他错误)后再使用此功能\n'
-                         '2.此模式每1s自动进行一次“分开选”\n'
+                         '2.此模式每1s自动进行一次“分开选”（温馨提示：持续过长有风险）\n'
                          '3.如若中途掉线，需要自己手动重新登录')
         jianlou_switch['text'] = '停止'
     else:
@@ -232,6 +232,8 @@ def auto_switch(event):
 def download_image_file(event):
     global sess
     sess = requests.session()
+    sess.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4261.0 Safari/537.36'})
+
     login_info['text'] = ''
     try:
         html = sess.get('http://sep.ucas.ac.cn/changePic', timeout=3)
@@ -252,7 +254,7 @@ if __name__ == "__main__":
     auto_working = 0
     login_check = 0
     root = tkinter.Tk()
-    root.title("UCAS_course_grad 1.7 by wyf && YaoBIG QQ:751076061")
+    root.title("UCAS_course_grad 1.8 by wyf && YaoBIG QQ:751076061")
     root.geometry('620x640')
     root.resizable(width=False, height=False)
 
@@ -313,14 +315,14 @@ if __name__ == "__main__":
     login_button.grid(row=6, column=1, sticky=tkinter.E)
     login_button.bind('<ButtonRelease-1>', login)
 
-    tkinter.Label(root, text='课程编码（一起选） 用空格连接', font=('Calibri', '14')).grid(row=7, column=0, sticky=tkinter.W)
+    tkinter.Label(root, text='课程编码（一起选） 用逗号连接', font=('Calibri', '14')).grid(row=7, column=0, sticky=tkinter.W) # NOTE: 部分课程编号中有空格，请注意
     course_input = tkinter.Entry(root)
     course_input['width'] = 30
     course_input.grid(row=8, column=0, sticky=tkinter.W)
     course_input['font'] = ('Calibri', '14')
     course_input.bind('<Key-Return>', select_together)
 
-    tkinter.Label(root, text='课程编码（分开选） 用空格连接', font=('Calibri', '14')).grid(row=7, column=1, sticky=tkinter.W)
+    tkinter.Label(root, text='课程编码（分开选） 用逗号连接', font=('Calibri', '14')).grid(row=7, column=1, sticky=tkinter.W)
     course_input_separate = tkinter.Entry(root)
     course_input_separate['width'] = 30
     course_input_separate.grid(row=8, column=1, sticky=tkinter.W)
