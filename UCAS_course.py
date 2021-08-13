@@ -349,7 +349,7 @@ def download_image_file(event):
 
     login_info['text'] = ''
     try:
-        html = sess.get('http://sep.ucas.ac.cn/changePic', timeout = 3)
+        html = sess.get('http://sep.ucas.ac.cn/randomcode.jpg', timeout = 3)
     except:
         login_info['text'] = '网页超时 请重新获取验证码'
         return
@@ -360,6 +360,7 @@ def download_image_file(event):
 
     global cert_photo, show_pic
     cert_img = Image.open("certcode.jpg")
+    cert_img = cert_img.resize((100, 25), Image.ANTIALIAS) # 调整大小 Image.ANTIALIAS 抗锯齿
     cert_photo = ImageTk.PhotoImage(cert_img)
     show_pic['image'] = cert_photo
 
@@ -401,7 +402,7 @@ if __name__ == "__main__":
     global root
     root = tkinter.Tk()
     root.title("UCAS_course")
-    root.geometry('620x640')
+    root.geometry('615x580')
     root.resizable(width = False, height = False)
 
     menubar = tkinter.Menu(root)

@@ -1,1 +1,6 @@
 *.jpg
+*.bat
+*.ico
+*.spec
+build
+__pycache__
