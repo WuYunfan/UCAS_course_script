@@ -2,5 +2,7 @@
 *.bat
 *.ico
 *.spec
+
 build
+dist/*.jpg
 __pycache__
