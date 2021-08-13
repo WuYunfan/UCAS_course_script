@@ -145,7 +145,7 @@ def login(event = None):
     if res != 'ok':
         login_info['text'] = '登录失败了\t\tT_T'
         return
-    login_info['text'] = '欢迎 ' + name_student + '\t^_^'
+    login_info['text'] = '欢迎 ' + name_student + ' ^_^'
     
     # 锁住登录信息（目前来看作用只是以防万一）
     select_bachlor['state'] = tkinter.DISABLED
