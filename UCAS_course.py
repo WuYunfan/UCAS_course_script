@@ -29,7 +29,7 @@ def update_link():
         link_course_manage = 'http://jwxk.ucas.ac.cn/courseManage/main'
     
 
-def login_jwxt(ava, add_id_to_name = 0):
+def login_jwxt(add_id_to_name = 0):
     page_jump = post_data('http://sep.ucas.ac.cn/portal/site/226/821')
     if page_jump is None:
         tkinter.messagebox.showerror(title = '网页超时', message = '请检查是否断网或者延迟过高')
@@ -53,18 +53,15 @@ def login_jwxt(ava, add_id_to_name = 0):
     pattern_student_id = re.compile('doSelectNo\?num=([\w]*)')
     try:
         list_id = re.findall(pattern_student_id, page_jwxt.text)
-        student_id_bach = list_id[0]
-        student_id_grad = list_id[1]
+        list_id.sort()
+        N_id =len(list_id)
+        student_id = list_id[N_id-1]
 
-        pattern_K = re.compile('K')
-        if re.search(pattern_K, student_id_grad) != None:
-            print("Ah, student id unsual order.")
-            student_id_bach, student_id_grad = student_id_grad, student_id_bach
-
-        student_id = student_id_bach if ava == '本科生' else student_id_grad
+        for x in list_id: 
+            print(x)
 
         student_number_payload = {'num': student_id}
-        page_check = post_data('http://jwxk.ucas.ac.cn/doSelectNo', data=student_number_payload)
+        page_check = post_data('http://jwxk.ucas.ac.cn/doSelectNo', data = student_number_payload)
         if page_check is None:
             tkinter.messagebox.showerror(title = '网页超时', message = '请检查是否断网或者延迟过高')
             return "high delay"
@@ -77,25 +74,29 @@ def login_jwxt(ava, add_id_to_name = 0):
         if add_id_to_name == 1:
             global name_student
             name_student = name_student + ' ' + student_id
+        page_jwxt = page_check
 
     except:
-        # print(page_jwxt.text)
-        print("No id to choose.")
-        if ava == '研究生':
-            tkinter.messagebox.showerror(title = 'Emmmm', message = '你好像还不是研究生？')
-            return "Not graduate"
+        pass
+        
 
+    global Avatar
+    list_bks = re.findall(re.compile('(bks)'), page_jwxt.text)
+    print(list_bks)
+    if len(list_bks) >0:
+        Avatar = '本科生'
+    else:
+        Avatar = '研究生'
+
+    #print(Avatar)
+    update_link()
     global link_course_manage
-    link_course_manage = 'http://jwxk.ucas.ac.cn/courseManageBachelor/main' if ava == '本科生' else 'http://jwxk.ucas.ac.cn/courseManage/main'
-    # print(link_course_manage)
     page_course_manage = post_data(link_course_manage)
     if page_course_manage is None:
         tkinter.messagebox.showerror(title = '网页超时', message = '请检查是否断网或者延迟过高')
         return "high delay"
 
-    # 以下认为登录已经成功，更新 Identity, Avatar, Student_ID
-    global Avatar
-    Avatar = ava
+    # 以下认为登录已经成功
     
     pattern_select_course_s = re.compile('\?s=(.*?)";')
     select_course_s = re.search(pattern_select_course_s, page_course_manage.text).group(1)
@@ -156,7 +157,7 @@ def login(event = None):
     login_info['text'] = '登录选课系统...\t\t>_<'
     root.update_idletasks()
 
-    res = login_jwxt(avatar_input.get(), add_id_to_name = 1)
+    res = login_jwxt(add_id_to_name = 1)
     
     if res != 'ok':
         login_info['text'] = '登录失败了\t\tT_T'
@@ -164,9 +165,8 @@ def login(event = None):
     login_info['text'] = '欢迎 ' + name_student + ' ^_^'
     
     # 锁住登录信息（目前来看作用只是以防万一）
-    select_bachlor['state'] = tkinter.DISABLED
-    select_graduate['state'] = tkinter.DISABLED
-    update_link()
+    #select_bachlor['state'] = tkinter.DISABLED
+    #select_graduate['state'] = tkinter.DISABLED
 
 def relogin():
     page_jump = post_data('http://sep.ucas.ac.cn/appStore')
@@ -179,8 +179,7 @@ def relogin():
         tkinter.messagebox.showerror(title = '请重新登录', message = '看起来已经好久没有操作了')
         return "sign out"
     
-    global Avatar
-    res = login_jwxt(Avatar)
+    res = login_jwxt()
     return res
 
 def check_before_select():
@@ -196,7 +195,7 @@ def check_before_select():
         return None
 
     global link_select_course
-    page_select_course = post_data(link_select_course, select_course_payload, time_out = 10, retry = 1)
+    page_select_course = post_data(link_select_course, select_course_payload)
     if page_select_course is None:
         select_result['text'] = '网页超时 没有进行选课'
         return None
@@ -330,14 +329,13 @@ def select_together(event):
     select_result_page = post_data(link_save_course + "?s=" + query_s, data = select_course_payload)
     
     del select_course_payload['_csrftoken']
-    result_page = sess.get(link_course_manage + query_s, timeout = 10)
     del sess.headers['Referer']
     
     #print(result_page.text)
-    if result_page is None:
+    if select_result_page is None:
         select_result['text'] = '网页超时 没有进行选课'
     else:
-        generate_log(result_page)
+        generate_log(select_result_page)
         select_result['text'] = '选课完成'
 
 
@@ -423,9 +421,8 @@ def init():
 
     download_image_file(None)
 
-    select_bachlor['state'] = tkinter.NORMAL
-    select_graduate['state'] = tkinter.NORMAL
-
+    #select_bachlor['state'] = tkinter.NORMAL
+    #select_graduate['state'] = tkinter.NORMAL
 
 
 def sign_out():
@@ -498,6 +495,7 @@ if __name__ == "__main__":
     get_pic.bind('<Key-Return>', download_image_file)
 
     # 选择身份
+    '''
     global avatar_input
     avatar_input = tkinter.StringVar() # 定义变量记录所选身份
     avatar_input.set('本科生')
@@ -510,6 +508,7 @@ if __name__ == "__main__":
     select_graduate.pack(side = tkinter.LEFT, padx = 4)
     select_graduate.bind('<Key-Return>', login)
     #print(avatar_input.get())
+    '''
 
     login_button = tkinter.Button(root, text = '登 录')
     login_button['width'] = 6
