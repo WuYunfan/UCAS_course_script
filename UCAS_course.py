@@ -327,7 +327,7 @@ def select_together(event):
     get_csrftoken(select_course_page)
     sess.headers.update({"Referer": link_select_course + "?s=" + query_s})
     
-    select_result_page = post_data(link_save_course + "?s=" + query_s, data = select_course_payload, time_out = 10, retry = 1)
+    select_result_page = post_data(link_save_course + "?s=" + query_s, data = select_course_payload)
     
     del select_course_payload['_csrftoken']
     result_page = sess.get(link_course_manage + query_s, timeout = 10)
