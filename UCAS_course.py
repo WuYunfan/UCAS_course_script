@@ -8,14 +8,26 @@ import re
 
 
 # 封装用于 post 的函数，失败返回 None
-def post_data(url, data = None, time_out = 3, retry = 5):
+def post_data(url, data = None, params = None, time_out = 3, retry = 5):
     for _ in range(retry):
         try:
-            page = sess.post(url, data=data, timeout=time_out)
+            page = sess.post(url, data = data, params = params, timeout=time_out)
             return page
         except:
             pass
     return None
+
+def update_link():
+    global Avatar, link_select_course, link_save_course, link_course_manage
+    if Avatar == '本科生':
+        link_select_course = 'http://jwxk.ucas.ac.cn/courseManageBachelor/selectCourse'  
+        link_save_course = 'http://jwxk.ucas.ac.cn/courseManageBachelor/saveCourse'
+        link_course_manage = 'http://jwxk.ucas.ac.cn/courseManageBachelor/main'
+    else:
+        link_select_course = 'http://jwxk.ucas.ac.cn/courseManage/selectCourse'
+        link_save_course = 'http://jwxk.ucas.ac.cn/courseManage/saveCourse'
+        link_course_manage = 'http://jwxk.ucas.ac.cn/courseManage/main'
+    
 
 def login_jwxt(ava, add_id_to_name = 0):
     page_jump = post_data('http://sep.ucas.ac.cn/portal/site/226/821')
@@ -73,6 +85,7 @@ def login_jwxt(ava, add_id_to_name = 0):
             tkinter.messagebox.showerror(title = 'Emmmm', message = '你好像还不是研究生？')
             return "Not graduate"
 
+    global link_course_manage
     link_course_manage = 'http://jwxk.ucas.ac.cn/courseManageBachelor/main' if ava == '本科生' else 'http://jwxk.ucas.ac.cn/courseManage/main'
     # print(link_course_manage)
     page_course_manage = post_data(link_course_manage)
@@ -91,6 +104,9 @@ def login_jwxt(ava, add_id_to_name = 0):
     deptIds = re.findall(pattern_deptIds, page_course_manage.text)
     
     global select_course_payload
+    #select_course_payload = {'deptIds': deptIds}
+    global query_s
+    query_s = select_course_s
     select_course_payload = {'s': select_course_s, 'deptIds': deptIds}
     
     return 'ok'
@@ -150,6 +166,7 @@ def login(event = None):
     # 锁住登录信息（目前来看作用只是以防万一）
     select_bachlor['state'] = tkinter.DISABLED
     select_graduate['state'] = tkinter.DISABLED
+    update_link()
 
 def relogin():
     page_jump = post_data('http://sep.ucas.ac.cn/appStore')
@@ -178,8 +195,8 @@ def check_before_select():
         jianlou_switch['text'] = '捡漏'
         return None
 
-    link_select_course = 'http://jwxk.ucas.ac.cn/courseManageBachelor/selectCourse' if Avatar == '本科生' else 'http://jwxk.ucas.ac.cn/courseManage/selectCourse'
-    page_select_course = post_data(link_select_course, select_course_payload)
+    global link_select_course
+    page_select_course = post_data(link_select_course, select_course_payload, time_out = 10, retry = 1)
     if page_select_course is None:
         select_result['text'] = '网页超时 没有进行选课'
         return None
@@ -256,6 +273,13 @@ def list_split(list):
             res.append(x)
     return res
 
+def get_csrftoken(select_course_page):
+    global select_course_payload
+    pattern_get_csrftoken = re.compile('name="_csrftoken" value="(.*?)"')
+    value = re.search(pattern_get_csrftoken, select_course_page.text).group(1)
+    select_course_payload['_csrftoken'] = value
+    
+
 def select_separately(event):
     select_course_page = check_before_select()
     if select_course_page is None:
@@ -263,19 +287,24 @@ def select_separately(event):
 
     course_list = list_split(course_input_separate.get())
 
-    global Avatar
-    link_save_course = 'http://jwxk.ucas.ac.cn/courseManageBachelor/saveCourse' if Avatar == '本科生' else 'http://jwxk.ucas.ac.cn/courseManage/saveCourse'
+    global Avatar, link_save_course, link_select_course
+    
+    sess.headers.update({"Referer": link_select_course + "?s=" + query_s})
     for course in course_list:
+        select_course_page = check_before_select()
         select_course_payload['sids'] = []
         if add_course_code_to_payload(course, select_course_page) == 0:
             continue
         
+        get_csrftoken(select_course_page)
         select_result_page = post_data(link_save_course, select_course_payload)
         if select_result_page is None:
             log['text'] += course + ': 网页超时'+' \n ' + sep_time['text'] + '\n'
         else:
             generate_log(select_result_page)
+        del select_course_payload['_csrftoken']
 
+    del sess.headers['Referer']
     select_result['text'] = '选课完成'
 
 def select_together(event):
@@ -293,20 +322,29 @@ def select_together(event):
         select_result['text'] = '课程代码均不可用'
         return
 
-    global Avatar
-    link_save_course = 'http://jwxk.ucas.ac.cn/courseManageBachelor/saveCourse' if Avatar == '本科生' else 'http://jwxk.ucas.ac.cn/courseManage/saveCourse'
-    select_result_page = post_data(link_save_course, select_course_payload)
-    if select_result_page is None:
+    global Avatar, link_save_course, link_select_course, link_course_manage
+    
+    get_csrftoken(select_course_page)
+    sess.headers.update({"Referer": link_select_course + "?s=" + query_s})
+    
+    select_result_page = post_data(link_save_course + "?s=" + query_s, data = select_course_payload, time_out = 10, retry = 1)
+    
+    del select_course_payload['_csrftoken']
+    result_page = sess.get(link_course_manage + query_s, timeout = 10)
+    del sess.headers['Referer']
+    
+    #print(result_page.text)
+    if result_page is None:
         select_result['text'] = '网页超时 没有进行选课'
     else:
-        generate_log(select_result_page)
+        generate_log(result_page)
         select_result['text'] = '选课完成'
 
 
 def get_time():
     while True:
         try:
-            current_time = requests.get('http://jwxk.ucas.ac.cn/courseManageBachelor/main', timeout=3)
+            current_time = requests.get('http://jwxk.ucas.ac.cn/courseManage/main', timeout=3)
             current_time = current_time.headers
             current_time = current_time['Date']
             hour = current_time[17:19]
@@ -378,7 +416,7 @@ def init():
 
     global sess # 全局session
     sess = requests.session()
-    sess.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4261.0 Safari/537.36'}) # 给 seesion 做伪装，通过浏览器检测
+    sess.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36 Edg/92.0.902.84'}) # 给 seesion 做伪装，通过浏览器检测
 
     global Avatar # 标明用本科生/研究生身份登录
     Avatar = None

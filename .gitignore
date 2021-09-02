@@ -6,3 +6,4 @@
 build
 dist/*.jpg
 __pycache__
+.cph
